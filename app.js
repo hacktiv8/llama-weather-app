@@ -4,6 +4,8 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { html, raw } from "hono/html";
 import fs from "node:fs";
 
+import { getWeather } from "./api.js";
+
 const app = new Hono();
 
 app.use("/img/*", serveStatic({ root: "./" }));
@@ -23,8 +25,10 @@ app.get("/health", function (ctx) {
 });
 
 app.get("/", async function (ctx) {
-  const location = ctx.req.query("location") || "Jakarta";
+  const location = ctx.req?.query("location") || "Jakarta";
   console.log(`Weather for: ${location}`);
+  const weather = await getWeather(location);
+  console.log(weather);
 
   return ctx.render(
     html`<div class="weathers">
@@ -32,17 +36,18 @@ app.get("/", async function (ctx) {
       <div id="weather">
         <div class="info">
           <div class="icon">
-            <img src="img/clear-day.png" />
+            <img src="img/${weather.icon}.png" />
           </div>
           <div class="text">
             <ul id="report">
-              <li>Temperature: <span id="temp">30°C</span></li>
-              <li>Humidity: <span id="humidity">100</span></li>
+              <li>Temperature: <span id="temp">${weather.temp}°C</span></li>
+              <li>Humidity: <span id="humidity">${weather.humidity}%</span></li>
+              <li>Wind Speed: <span id="uv">${weather.windspeed}</span></li>
             </ul>
           </div>
         </div>
       </div>
-      <div id="comment">&nbsp;</div>
+      <div id="comment">${weather.description}</div>
     </div>`,
   );
 });
