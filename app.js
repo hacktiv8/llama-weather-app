@@ -2,9 +2,11 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { html, raw } from "hono/html";
+import { parse } from "marked";
 import fs from "node:fs";
 
 import { getWeather } from "./api.js";
+import { generate } from "./llm.js";
 
 const app = new Hono();
 
@@ -25,10 +27,18 @@ app.get("/health", function (ctx) {
 });
 
 app.get("/", async function (ctx) {
-  const location = ctx.req?.query("location") || "Jakarta";
-  console.log(`Weather for: ${location}`);
+  const location = ctx.req.query("location") || "Jakarta";
   const weather = await getWeather(location);
-  console.log(weather);
+  const prompt = `You are an awesome weather reporter. Generate a report for today's weather in ${location} based on data below:
+- temperature: ${weather.temp}
+- humidity: ${weather.humidity}
+- wind speed: ${weather.windspeed}
+- maximum temperature: ${weather.maxTemp}
+
+Give a recommendation on what to wear, what to bring, and any activities that are suitable for the weather. Make the report short, funny and engaging.
+`;
+
+  const comment = await generate(prompt);
 
   return ctx.render(
     html`<div class="weathers">
@@ -47,7 +57,7 @@ app.get("/", async function (ctx) {
           </div>
         </div>
       </div>
-      <div id="comment">${weather.description}</div>
+      <div id="comment">${raw(parse(comment))}</div>
     </div>`,
   );
 });
