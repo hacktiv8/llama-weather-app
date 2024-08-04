@@ -13,7 +13,6 @@ export async function generate(prompt) {
     });
 
     const { response } = await res.json();
-    console.log(response);
     return response.trim();
   } catch (error) {
     console.error(error);
